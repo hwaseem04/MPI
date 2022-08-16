@@ -21,13 +21,13 @@ void print_matrix(int size1, int size2, int* arr){
 }
 
 
-int* subset_calculation(int col_A, int row_B, int* sub_arr, int* arr){
+int* subset_calculation(int n, int p, int q, int* sub_mat, int* mat){
 	int ans = 0;
-	int* row_arr = (int*)malloc(sizeof(int) * col_A);
-	for (int i = 0; i < row_B; i++){
+	int* row_arr = (int*)malloc(sizeof(int) * q);
+	for (int i = 0; i < q; i++){
 		ans = 0;
-		for (int j = 0; j < col_A; j++){
-			ans += (sub_arr[j] * arr[j * row_B + i]);
+		for (int j = 0; j < n; j++){
+			ans += (sub_mat[j] * mat[j * q + i]);
 		}
 		row_arr[i] = ans;
 	}
@@ -73,19 +73,18 @@ int main(int argc, char** argv){
 	MPI_Bcast(Matrix_B, p*q, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);
 	
-	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Scatter(Matrix_A, n, MPI_INT, matrix_rows_subset, n, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	//print_matrix(p,q,Matrix_B);
+	//print_matrix(m,n,Matrix_A);
 	/*for (int i = 0; i < 4; i++)
 		cout << matrix_rows_subset[i] << " " ;
 	cout << "\n";*/
-	int* sub_ans = subset_calculation(n, p, matrix_rows_subset, Matrix_B);
+	int* sub_ans = subset_calculation(n, p, q, matrix_rows_subset, Matrix_B);
 	
-	/*for (int i = 0; i < n; i++)
-        cout << sub_ans[i] << " " ;
-    cout << "\n";*/
+	/*for (int i = 0; i < q; i++)
+        	cout << sub_ans[i] << " " ;
+    	cout << "\n";*/
 
 	int* Matrix_C = NULL;
 	if (rank == 0){
