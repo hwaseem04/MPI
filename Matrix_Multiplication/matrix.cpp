@@ -20,7 +20,6 @@ void print_matrix(int size1, int size2, int* arr){
     }
 }
 
-
 int* subset_calculation(int n, int p, int q, int* sub_mat, int* mat){
 	int ans = 0;
 	int* row_arr = (int*)malloc(sizeof(int) * q);
@@ -34,10 +33,8 @@ int* subset_calculation(int n, int p, int q, int* sub_mat, int* mat){
 	return row_arr;	
 }	
 
-
 int main(int argc, char** argv){
 	int rank, num_procs;
-		
 	int m,n,p,q;
 	m = atoi(argv[1]);
 	n = atoi(argv[2]);

@@ -1,10 +1,15 @@
-EXECS = matrix
+EXECS = matrix 
 MPICC = mpicxx
 CFLAGS = -03 -std=c++11
-all : ${EXECS}
+//SRC = $(wildcard *.cpp)
+//OBJECTS = $(SRC:.cpp=.o)
 
-matrix: matrix.cpp
-	${MPICC} ${FLAGS} -o matrix matrix.cpp
+all: $(EXECS)
+
+//all : ${OBJECTS}
+
+matrix: matrix2.cpp
+	${MPICC} ${FLAGS} -o matrix matrix2.cpp
 clean:
 	rm -f ${EXECS}
 
