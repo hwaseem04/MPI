@@ -35,13 +35,13 @@ void print_matrix(int rows, int cols, int** mat){
 }
 
 
-int* subset_calculation(int n, int q, int* sub_mat, int* mat){
+int* subset_calculation(int n, int q, int* sub_mat, int** mat){
     int ans = 0;
     int* row_arr = (int*)malloc(sizeof(int) * q);
     for (int i = 0; i < q; i++){
         ans = 0;
         for (int j = 0; j < n; j++){
-            ans += (sub_mat[j] * mat[j * q + i]);
+            ans += (sub_mat[j] * mat[j][i]);
         }
         row_arr[i] = ans;
     }
@@ -107,17 +107,17 @@ int main(int argc, char** argv){
 			//Changes made in mac
             
 			subset_ans = subset_calculation(n, q, matrix_rows_subset, Matrix_B);
-			Matrix_C = (int*)malloc(sizeof(int) * m);
+			Matrix_C = (int**)malloc(sizeof(int) * m);
 			for(int i = 0; i < m; i++){
 				*(Matrix_C + i) = (int*)malloc(sizeof(int) * q);	  
 			}
 			*(Matrix_C + 0) = subset_ans;
 			
 			for (int i = 1; i < m; i++){
-				MPI_Recv(*(Matric_C + i), q, MPI_INT, i, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(*(Matrix_C + i), q, MPI_INT, i, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
 			
-			//print_matrix(m,q,Matric_C);
+			//print_matrix(m,q,Matrix_C);
 		}
 		else if((rank < usable_proc) ){   // can i add additional parameter as "&& rank != 0"" ??
 			MPI_Recv(matrix_rows_subset, n, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -130,32 +130,35 @@ int main(int argc, char** argv){
 				Matrix_B[j] = (int*)malloc(sizeof(int) * q);
 				MPI_Recv(*(Matrix_B + j), q, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
-			//MPI_Recv(&(Matrix_B), p*q, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			print_matrix(p,q,Matrix_B);
-			cout << "\n";
+			////MPI_Recv(&(Matrix_B), p*q, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			/*print_matrix(p,q,Matrix_B);
+			cout << "\n";*/
 			// Changes in mac
 			int* subset_ans = subset_calculation(n, q, matrix_rows_subset, Matrix_B);
 			MPI_Send(subset_ans, q, MPI_INT, 0, 3, MPI_COMM_WORLD);
 		}
-
+			
 		MPI_Barrier(MPI_COMM_WORLD);
 		if(Matrix_C != NULL)
 			print_matrix(m, q, Matrix_C);
 	}
 	else if(num_procs < m){
 		//Editted in Mac
+		
 		extra_rows = m - num_procs;
 		
-		int* matrix_rows_subset = NULL;
+		int* matrix_rows_subset = (int*)malloc(sizeof(int) * n);
 		int* subset_ans = NULL;
 		int** Matrix_C = NULL;
+		//MPI_Bcast();
 		if (rank == 0){
 			for (int i = 1; i < num_procs; i++){
 				MPI_Send(*(Matrix_A + i), n, MPI_INT, i, 1, MPI_COMM_WORLD ); 
 			}
+			matrix_rows_subset = *(Matrix_A + 0);
 		}
 		else if(rank > 0){
-
+			
 		}
 	}
 
