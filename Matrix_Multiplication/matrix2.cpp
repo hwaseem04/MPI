@@ -54,14 +54,6 @@ int NumRows_to_Proc(int N, int j, int P){
     return (floor(N * (j + 1)/P) - floor(N * j/P));
 }
 
-int check_arr_empty(int* arr, int n){
-    for (int i = 0; i < n; i++){
-        if (arr[i] != 0){
-            return 0;
-        }
-    }
-    return 1;
-}
 
 
 int main(int argc, char** argv){
@@ -161,7 +153,7 @@ int main(int argc, char** argv){
     else if(num_procs < m){
         int row_count = 0;
         int proc_map[num_procs];
-        for(int i = 0; i < num_procs; i++) map[i] = 0;
+        
         
         //int extra_rows = m - num_procs;
         
@@ -171,28 +163,70 @@ int main(int argc, char** argv){
         
         
         
+        
         int num = 0;
         if (rank == 0){
+            for (int i = 1; i < num_proc; i++){
+                for(int j = 0; j < p; j++){
+                    MPI_Send(*(Matrix_B + j), q, MPI_INT, i, 200, MPI_COMM_WORLD);
+                }
+            }
             
-            for(int i = k; i < m; i++){
+            for(int i = 0; i < num_proc; i++){
+                proc_map[i] = NumRows_to_Proc(m, i, num_procs);
+            }
+            
+            int local = proc_map[i];
+            row_count = local;
+            
+            for (int i = local; i < num_proc; i++){
+                for (int j = 0; j < proc_map[i]; j++){
+                    MPI_Send(*(Matrix_A + i), n, MPI_INT, i, rowcount, MPI_COMM_WORLD);
+                    row_count++;
+                }
+            }
+            
+            for (int i = local; i < m; i++){
+                MPI_Send(*(Matrix_A + i), n, MPI_INT, i, i)
+            }
+            
+            Matrix_C = (int**)malloc(sizeof(int) * m);
+            for(int i = 0; i < m; i++){
+                *(Matrix_C + i) = (int*)malloc(sizeof(int) * q);	  
+            }
+            //int** subset_ans_buffer = (int**)malloc(sizeof(int*) * local);
+            
+            for(int i = 0; i < local; i++){
+                *(Matrix_C + i) = subset_calculation(n, q, *(Matrix_A + i), Matrix_B);
+            }
+            
+            for(int i = local; i < m; i++)
                 MPI_Recv(*(Matrix_C + i), q, MPI_INT, 0, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
         }
         else if (rank > 0){
+            for (int j = 0; j < p; j++){
+                Matrix_B[j] = (int*)malloc(sizeof(int) * q);
+                MPI_Recv(*(Matrix_B + j), q, MPI_INT, 0, 200, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
+            
             MPI_Status status;
             int tag_tracker[m];
-            int** temp_buffer[ceil(m/2)] = (int**)malloc(sizeof(int*) * n);
+            int** temp_buffer = (int**)malloc(sizeof(int*) * m);
+            int** subset_ans_buffer = (int**)malloc(sizeof(int*) * m);
             int total_rows = 0;
             for (int i = 0; i < m; i++) tag_tracker[i] = -1;
             
             while(1){
+                *(temp_buffer + total_rows) = (int*)malloc(sizeof(int) * n);
                 MPI_Recv(*(temp_buffer + total_rows), n, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                *(temp_buffer + total_rows) = subset_calculation(n, q, *(temp_buffer + total_rows), Matrix_B);
+                *(subset_ans_buffer + total_rows) = (int*)malloc(sizeof(int) * q);
+                *(subset_ans_buffer + total_rows) = subset_calculation(n, q, *(temp_buffer + total_rows), Matrix_B);
                 tag_tracker[total_rows++] = status.MPI_TAG;
             }
             
             for (int i = 0; i < total_rows; i++){
-                MPI_Send(*(temp_buffer + i), q, MPI_INT, 0, tag_tracker[i], MPI_COMM_WORLD);
+                MPI_Send(*(subset_ans_buffer + i), q, MPI_INT, 0, tag_tracker[i], MPI_COMM_WORLD);
             }
         }
     MPI_Finalize();
