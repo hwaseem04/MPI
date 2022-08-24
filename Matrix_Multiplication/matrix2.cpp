@@ -161,8 +161,9 @@ int main(int argc, char** argv){
         int* subset_ans = NULL;
         int** Matrix_C = NULL;
         
-        
-        
+        for(int i = 0; i < num_procs; i++){
+            proc_map[i] = NumRows_to_Proc(m, i, num_procs);
+        }
         
         int num = 0;
         if (rank == 0){
@@ -173,10 +174,11 @@ int main(int argc, char** argv){
                 }
             }
             
-            for(int i = 0; i < num_procs; i++){
+            /*for(int i = 0; i < num_procs; i++){
                 proc_map[i] = NumRows_to_Proc(m, i, num_procs);
-            }
+            }*/
             
+            //MPI_Bcast(proc_map, num_procs, MPI_INT, 0, MPI_COMM_WORLD);
             int local = proc_map[0];
             row_count = local;
             
@@ -201,12 +203,12 @@ int main(int argc, char** argv){
             //print_matrix(m,q,Matrix_C);  //PErfectly printing for local value
             
             for(int j = local; j < m; j++){
-                cout << "DEBUG " << flag << endl;
-                flag = MPI_Recv(*(Matrix_C + j), q, MPI_INT, 0, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                cout << "Final recv " << flag << endl;
+                //cout << "DEBUG " << j << endl;
+                flag = MPI_Recv(*(Matrix_C + j), q, MPI_INT, MPI_ANY_SOURCE, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //cout << "Final recv " << flag << endl;
             }
-            //cout << "DEBUG\n"; //Not working
-            //print_matrix(m,q,Matrix_C);
+            
+            print_matrix(m,q,Matrix_C);
         }
         else if (rank > 0){
             
@@ -224,8 +226,10 @@ int main(int argc, char** argv){
             for (int i = 0; i < m; i++) tag_tracker[i] = -1;  
             
             //cout << "DEBUG\n";
-            int k = 0;
-            while(k < 2){
+            int counter  = 0;
+            int k = proc_map[rank];
+            cout << "RANK " << rank << ", rows : "<< k << endl;
+            while(counter < k){
                 *(temp_buffer + total_rows) = (int*)malloc(sizeof(int) * n);
                 flag = MPI_Recv(*(temp_buffer + total_rows), n, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
                 /*if (rank == 1){
@@ -238,7 +242,7 @@ int main(int argc, char** argv){
                 *(subset_ans_buffer + total_rows) = (int*)malloc(sizeof(int) * q);
                 *(subset_ans_buffer + total_rows) = subset_calculation(n, q, *(temp_buffer + total_rows), Matrix_B);
                 tag_tracker[total_rows++] = status.MPI_TAG;
-                k++;
+                counter++;
             }
             //cout << "DEBUG\n"; // After changing k value, it is running
             
