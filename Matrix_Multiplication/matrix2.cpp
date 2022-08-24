@@ -201,12 +201,12 @@ int main(int argc, char** argv){
             //print_matrix(m,q,Matrix_C);  //PErfectly printing for local value
             
             for(int j = local; j < m; j++){
-                //cout << "DEBUG\n";
+                cout << "DEBUG " << flag << endl;
                 flag = MPI_Recv(*(Matrix_C + j), q, MPI_INT, 0, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 cout << "Final recv " << flag << endl;
             }
             //cout << "DEBUG\n"; //Not working
-            print_matrix(m,q,Matrix_C);
+            //print_matrix(m,q,Matrix_C);
         }
         else if (rank > 0){
             
@@ -252,10 +252,12 @@ int main(int argc, char** argv){
             
             for (int i = 0; i < total_rows; i++){
                 flag = MPI_Send(*(subset_ans_buffer + i), q, MPI_INT, 0, tag_tracker[i], MPI_COMM_WORLD);
-                cout << 
+                //cout << "Send flag " << flag << endl;
             }
+            //cout << "Working well upto here\n";
         }
     }
+    
     MPI_Finalize();
     
     return 0;
