@@ -153,7 +153,7 @@ int main(int argc, char** argv){
     else if(num_procs < m){
         int row_count = 0;
         int proc_map[num_procs];
-        
+        int flag = 0;
         
         //int extra_rows = m - num_procs;
         
@@ -168,7 +168,8 @@ int main(int argc, char** argv){
         if (rank == 0){
             for (int i = 1; i < num_procs; i++){
                 for(int j = 0; j < p; j++){
-                    MPI_Send(*(Matrix_B + j), q, MPI_INT, i, 200, MPI_COMM_WORLD);
+                    flag = MPI_Send(*(Matrix_B + j), q, MPI_INT, i, 200, MPI_COMM_WORLD);
+                    //cout << "First send flag " << flag << endl; //flag = 0
                 }
             }
             
@@ -181,38 +182,49 @@ int main(int argc, char** argv){
             
             for (int i = local; i < num_procs; i++){
                 for (int j = 0; j < proc_map[i]; j++){
-                    MPI_Send(*(Matrix_A + i), n, MPI_INT, i, row_count, MPI_COMM_WORLD);
+                    flag = MPI_Send(*(Matrix_A + i), n, MPI_INT, i, row_count, MPI_COMM_WORLD);
                     row_count++;
+                    //cout << "Second send flag "<< flag << endl; //flag = 0
                 }
             }
+
             
             Matrix_C = (int**)malloc(sizeof(int) * m);
             for(int i = 0; i < m; i++){
                 *(Matrix_C + i) = (int*)malloc(sizeof(int) * q);	  
             }
-            //int** subset_ans_buffer = (int**)malloc(sizeof(int*) * local);
+            
             
             for(int i = 0; i < local; i++){
                 *(Matrix_C + i) = subset_calculation(n, q, *(Matrix_A + i), Matrix_B);
             }
+            //print_matrix(m,q,Matrix_C);  //PErfectly printing for local value
             
-            for(int i = local; i < m; i++)
-                MPI_Recv(*(Matrix_C + i), q, MPI_INT, 0, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for(int j = local; j < m; j++){
+                //cout << "DEBUG\n";
+                flag = MPI_Recv(*(Matrix_C + j), q, MPI_INT, 0, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                cout << "Final recv " << flag << endl;
             }
+            //cout << "DEBUG\n"; //Not working
+            //print_matrix(m,q,Matrix_C);
         }
         else if (rank > 0){
+            
+            
             for (int j = 0; j < p; j++){
                 Matrix_B[j] = (int*)malloc(sizeof(int) * q);
                 MPI_Recv(*(Matrix_B + j), q, MPI_INT, 0, 200, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
+            //print_matrix(p,q, Matrix_B);
             
             MPI_Status status;
             int tag_tracker[m];
             int** temp_buffer = (int**)malloc(sizeof(int*) * m);
             int** subset_ans_buffer = (int**)malloc(sizeof(int*) * m);
             int total_rows = 0;
-            for (int i = 0; i < m; i++) tag_tracker[i] = -1;
+            for (int i = 0; i < m; i++) tag_tracker[i] = -1;  
             
+            //cout << "DEBUG\n";
             while(1){
                 *(temp_buffer + total_rows) = (int*)malloc(sizeof(int) * n);
                 MPI_Recv(*(temp_buffer + total_rows), n, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
@@ -225,6 +237,7 @@ int main(int argc, char** argv){
                 MPI_Send(*(subset_ans_buffer + i), q, MPI_INT, 0, tag_tracker[i], MPI_COMM_WORLD);
             }
         }
+    }
     MPI_Finalize();
     
     return 0;
