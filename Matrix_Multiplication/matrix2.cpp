@@ -182,7 +182,7 @@ int main(int argc, char** argv){
             
             for (int i = local; i < num_procs; i++){
                 for (int j = 0; j < proc_map[i]; j++){
-                    flag = MPI_Send(*(Matrix_A + i), n, MPI_INT, i, row_count, MPI_COMM_WORLD);
+                    flag = MPI_Send(*(Matrix_A + row_count), n, MPI_INT, i, row_count, MPI_COMM_WORLD);
                     row_count++;
                     //cout << "Second send flag "<< flag << endl; //flag = 0
                 }
@@ -206,10 +206,9 @@ int main(int argc, char** argv){
                 cout << "Final recv " << flag << endl;
             }
             //cout << "DEBUG\n"; //Not working
-            //print_matrix(m,q,Matrix_C);
+            print_matrix(m,q,Matrix_C);
         }
         else if (rank > 0){
-            
             
             for (int j = 0; j < p; j++){
                 Matrix_B[j] = (int*)malloc(sizeof(int) * q);
@@ -225,16 +224,35 @@ int main(int argc, char** argv){
             for (int i = 0; i < m; i++) tag_tracker[i] = -1;  
             
             //cout << "DEBUG\n";
-            while(1){
+            int k = 0;
+            while(k < 2){
                 *(temp_buffer + total_rows) = (int*)malloc(sizeof(int) * n);
-                MPI_Recv(*(temp_buffer + total_rows), n, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                flag = MPI_Recv(*(temp_buffer + total_rows), n, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                /*if (rank == 1){
+                    for (int j = 0; j < n; j++){
+                        cout << *(*(temp_buffer + k) + j) << " ";
+                    }
+                    cout << " row " << k << "\n";
+                }*/
+                //cout << "Rank > 0, Recv flag " << flag << endl ;
                 *(subset_ans_buffer + total_rows) = (int*)malloc(sizeof(int) * q);
                 *(subset_ans_buffer + total_rows) = subset_calculation(n, q, *(temp_buffer + total_rows), Matrix_B);
                 tag_tracker[total_rows++] = status.MPI_TAG;
+                k++;
             }
+            //cout << "DEBUG\n"; // After changing k value, it is running
+            
+            //trying to print buffer
+            /*for (int i = 0; i < 2; i++){
+                for (int j = 0; j < q; j++){
+                    cout << *(*(subset_ans_buffer + i) + j) << " ";
+                }
+                cout << endl;
+            }*/
             
             for (int i = 0; i < total_rows; i++){
-                MPI_Send(*(subset_ans_buffer + i), q, MPI_INT, 0, tag_tracker[i], MPI_COMM_WORLD);
+                flag = MPI_Send(*(subset_ans_buffer + i), q, MPI_INT, 0, tag_tracker[i], MPI_COMM_WORLD);
+                cout << 
             }
         }
     }
