@@ -166,28 +166,24 @@ int main(int argc, char** argv){
         
         int num = 0;
         if (rank == 0){
-            for (int i = 1; i < num_proc; i++){
+            for (int i = 1; i < num_procs; i++){
                 for(int j = 0; j < p; j++){
                     MPI_Send(*(Matrix_B + j), q, MPI_INT, i, 200, MPI_COMM_WORLD);
                 }
             }
             
-            for(int i = 0; i < num_proc; i++){
+            for(int i = 0; i < num_procs; i++){
                 proc_map[i] = NumRows_to_Proc(m, i, num_procs);
             }
             
-            int local = proc_map[i];
+            int local = proc_map[0];
             row_count = local;
             
-            for (int i = local; i < num_proc; i++){
+            for (int i = local; i < num_procs; i++){
                 for (int j = 0; j < proc_map[i]; j++){
-                    MPI_Send(*(Matrix_A + i), n, MPI_INT, i, rowcount, MPI_COMM_WORLD);
+                    MPI_Send(*(Matrix_A + i), n, MPI_INT, i, row_count, MPI_COMM_WORLD);
                     row_count++;
                 }
-            }
-            
-            for (int i = local; i < m; i++){
-                MPI_Send(*(Matrix_A + i), n, MPI_INT, i, i)
             }
             
             Matrix_C = (int**)malloc(sizeof(int) * m);
