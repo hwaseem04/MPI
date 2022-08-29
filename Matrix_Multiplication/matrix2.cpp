@@ -88,15 +88,15 @@ int main(int argc, char** argv){
     }
     
 
-    if (num_procs > m){
-        int usable_proc = num_procs - m;
+    if (num_procs >= m){
+        int usable_proc =  m;
         
         //MPI_Bcast(Matrix_B, p*q, MPI_INT, 0, MPI_COMM_WORLD);
         //MPI_Barrier(MPI_COMM_WORLD);	
         int** Matrix_C = NULL;
 
         int* matrix_rows_subset = (int*)malloc(sizeof(int) * n);
-        int* subset_ans = (int*) malloc(sizeof(q));
+        int* subset_ans = (int*)malloc(sizeof(q));
         if (rank == 0){
             for(int i = 1; i < usable_proc; i++){
                 MPI_Send(*(Matrix_A + i), n, MPI_INT, i, 1, MPI_COMM_WORLD); 
@@ -163,6 +163,7 @@ int main(int argc, char** argv){
         
         for(int i = 0; i < num_procs; i++){
             proc_map[i] = NumRows_to_Proc(m, i, num_procs);
+//             cout << rank << "\t" << proc_map[i] << "\n";
         }
         
         int num = 0;
@@ -207,6 +208,7 @@ int main(int argc, char** argv){
                 flag = MPI_Recv(*(Matrix_C + j), q, MPI_INT, MPI_ANY_SOURCE, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //cout << "Final recv " << flag << endl;
             }
+            //MPI_Barrier(MPI_COMM_WORLD);
             
             print_matrix(m,q,Matrix_C);
         }
@@ -228,16 +230,20 @@ int main(int argc, char** argv){
             //cout << "DEBUG\n";
             int counter  = 0;
             int k = proc_map[rank];
-            cout << "RANK " << rank << ", rows : "<< k << endl;
-            while(counter < k){
+            
+            while(counter < k)
+            {
+                cout << "RANK " << rank << ", rows : "<< counter << endl;
                 *(temp_buffer + total_rows) = (int*)malloc(sizeof(int) * n);
+//                 cout << "DONE\n";
                 flag = MPI_Recv(*(temp_buffer + total_rows), n, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                /*if (rank == 1){
+                cout << "DONE\n";
+                if (rank == 2){
                     for (int j = 0; j < n; j++){
                         cout << *(*(temp_buffer + k) + j) << " ";
                     }
                     cout << " row " << k << "\n";
-                }*/
+                }
                 //cout << "Rank > 0, Recv flag " << flag << endl ;
                 *(subset_ans_buffer + total_rows) = (int*)malloc(sizeof(int) * q);
                 *(subset_ans_buffer + total_rows) = subset_calculation(n, q, *(temp_buffer + total_rows), Matrix_B);
@@ -260,6 +266,8 @@ int main(int argc, char** argv){
             }
             //cout << "Working well upto here\n";
         }
+        //MPI_Barrier(MPI_COMM_WORLD);
+        
     }
     
     MPI_Finalize();
